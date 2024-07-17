@@ -21,26 +21,51 @@ roundedCorner.Parent = frame
 -- Создаем надпись "Created by was_record"
 local createdByText = Instance.new("TextLabel")
 createdByText.Name = "CreatedByText"
-createdByText.Size = UDim2.new(1, 0, 0, 20)
-createdByText.Position = UDim2.new(0, 0, 0, 0)
+createdByText.Size = UDim2.new(0.7, 0, 0, 20)
+createdByText.Position = UDim2.new(0, 10, 0, 0)
 createdByText.BackgroundTransparency = 1
 createdByText.Text = "Created by was_record"
 createdByText.TextColor3 = Color3.fromRGB(180, 180, 180) -- Светло-серый цвет
 createdByText.Font = Enum.Font.GothamBold -- Жирный шрифт
 createdByText.TextSize = 14
-createdByText.TextXAlignment = Enum.TextXAlignment.Center
+createdByText.TextXAlignment = Enum.TextXAlignment.Left
 createdByText.Parent = frame
+
+-- Создаем кнопку "Close"
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0.2, 0, 0, 15)
+closeButton.Position = UDim2.new(0.78, 0, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0) -- Темно-красный цвет
+closeButton.Text = "Close"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 14
+closeButton.Parent = frame
+
+-- Закругляем края кнопки "Close"
+local closeButtonCorner = Instance.new("UICorner")
+closeButtonCorner.CornerRadius = UDim.new(0, 5)
+closeButtonCorner.Parent = closeButton
+
+-- Функция для закрытия GUI и удаления скрипта
+local function closeGui()
+    screenGui:Destroy()
+end
+
+-- Обработчик нажатия кнопки "Close"
+closeButton.Activated:Connect(closeGui)
 
 -- Создаем кнопку внутри GUI
 local button = Instance.new("TextButton")
-button.Name = "Button"
+button.Name = "noclip"
 button.Size = UDim2.new(0, 100, 0, 50)
 button.Position = UDim2.new(0, 10, 0, 30) -- Смещение кнопки ниже надписи
 button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-button.Text = "Off"
+button.Text = "NoClip: Off"
 button.TextColor3 = Color3.fromRGB(255, 255, 255)
-button.Font = Enum.Font.Gotham
-button.TextSize = 18
+button.Font = Enum.Font.GothamBold
+button.TextSize = 12
 button.Parent = frame
 
 -- Закругляем края кнопки
@@ -50,6 +75,7 @@ buttonCorner.Parent = button
 
 -- Переменная для отслеживания состояния кнопки
 local isOn = false
+local steppedConnection = nil
 
 -- Получаем TweenService
 local TweenService = game:GetService("TweenService")
@@ -61,17 +87,49 @@ local function createTween(instance, properties, duration)
     return tween
 end
 
+-- Функция для включения Noclip
+local function enableNoclip()
+    steppedConnection = game:GetService("RunService").Stepped:Connect(function()
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+-- Функция для выключения Noclip
+local function disableNoclip()
+    if steppedConnection then
+        steppedConnection:Disconnect()
+        steppedConnection = nil
+    end
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
 -- Функция для переключения состояния кнопки
 local function toggleButton()
     isOn = not isOn
     if isOn then
         local tween = createTween(button, {BackgroundColor3 = Color3.fromRGB(0, 255, 0)}, 0.5)
         tween:Play()
-        button.Text = "On"
+        button.Text = "Noclip: On"
+        enableNoclip()
     else
         local tween = createTween(button, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}, 0.5)
         tween:Play()
-        button.Text = "Off"
+        button.Text = "Noclip: Off"
+        disableNoclip()
     end
 end
 
@@ -96,8 +154,8 @@ toggleButton.Size = UDim2.new(0, 100, 0, 50)
 toggleButton.Position = UDim2.new(1, -150, 0.5, -25) -- По центру правой части экрана
 toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 toggleButton.Text = "Toggle GUI"
-toggleButton.TextColor3 = Color3.fromRGB(180, 180, 180)
-toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Font = Enum.Font.Gotham
 toggleButton.TextSize = 18
 toggleButton.Parent = screenGui
 
@@ -109,27 +167,33 @@ toggleButtonCorner.Parent = toggleButton
 -- Функция для переключения видимости GUI с анимацией
 local function toggleGuiVisibility()
     if frame.Visible then
-        local tweenFrame = createTween(frame, {BackgroundTransparency = 1}, 0.5)
-        local tweenText = createTween(createdByText, {TextTransparency = 1}, 0.5)
-        local tweenButton = createTween(button, {BackgroundTransparency = 1, TextTransparency = 1}, 0.5)
+        local tweenFrame = createTween(frame, {BackgroundTransparency = 1}, 1.0) -- Увеличено время анимации
+        local tweenText = createTween(createdByText, {TextTransparency = 1}, 1.0) -- Увеличено время анимации
+        local tweenButton = createTween(button, {BackgroundTransparency = 1, TextTransparency = 1}, 1.0) -- Увеличено время анимации
+        local tweenCloseButton = createTween(closeButton, {BackgroundTransparency = 1, TextTransparency = 1}, 1.0) -- Увеличено время анимации
         tweenFrame:Play()
         tweenText:Play()
         tweenButton:Play()
+        tweenCloseButton:Play()
         tweenFrame.Completed:Connect(function()
             frame.Visible = false
             frame.BackgroundTransparency = 0
             createdByText.TextTransparency = 0
             button.BackgroundTransparency = 0
             button.TextTransparency = 0
+            closeButton.BackgroundTransparency = 0
+            closeButton.TextTransparency = 0
         end)
     else
         frame.Visible = true
-        local tweenFrame = createTween(frame, {BackgroundTransparency = 0}, 1.5)
-        local tweenText = createTween(createdByText, {TextTransparency = 0}, 3.0)
-        local tweenButton = createTween(button, {BackgroundTransparency = 0, TextTransparency = 0}, 1.0)
+        local tweenFrame = createTween(frame, {BackgroundTransparency = 0}, 1.0) -- Увеличено время анимации
+        local tweenText = createTween(createdByText, {TextTransparency = 0}, 1.0) -- Увеличено время анимации
+        local tweenButton = createTween(button, {BackgroundTransparency = 0, TextTransparency = 0}, 1.0) -- Увеличено время анимации
+        local tweenCloseButton = createTween(closeButton, {BackgroundTransparency = 0, TextTransparency = 0}, 1.0) -- Увеличено время анимации
         tweenFrame:Play()
         tweenText:Play()
         tweenButton:Play()
+        tweenCloseButton:Play()
     end
 end
 
@@ -218,5 +282,12 @@ end)
 game:GetService("UserInputService").InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         update(input)
+    end
+end)
+
+-- Обработчик нажатия клавиши "Правый Ctrl"
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessedEvent)
+    if not gameProcessedEvent and input.KeyCode == Enum.KeyCode.RightControl then
+        toggleGuiVisibility()
     end
 end)
